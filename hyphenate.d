@@ -1,35 +1,67 @@
 import std.algorithm, std.conv, std.range, std.ascii;
-import std.stdio;
+import std.stdio, std.traits;
 import core.bitop;
 
 //enum HYPHEN = "&shy;";
 enum HYPHEN = "-";
 
-debug
+struct BitArray
 {
-    struct Priorities
+    this(R)(in R data) if (isIntegral!(ElementType!R))
     {
-        string pattern;
-        immutable(ubyte)[] prios;
-        alias prios this;
+        _bits = encode(data);
     }
+
+    @property bool empty() const
+    {
+        return _bits == fillBits;
+    }
+
+    @property ubyte front() const
+    in { assert(!empty); }
+    body
+    {
+        return cast(ubyte)((!!(_bits & 1) ? bsf(~_bits) : bsf(_bits)) - 1);
+    }
+
+    void popFront()
+    {
+        immutable shift = front + 1;
+        _bits = _bits >> shift | fillBits << 32 - shift;
+    }
+
+private:
+    uint encode(R)(in R data)
+    in { assert(reduce!"a+b"(0, data) + data.length < 32, data.to!string()); }
+    body
+    {
+        uint res = fillBits;
+        size_t i;
+        foreach (val; data.retro())
+        {
+            res <<= val + 1;
+            if (i++ & 1) res |= (1 << val + 1) - 1;
+        }
+        return res;
+    }
+
+    enum fillBits = uint.max;
+    uint _bits = fillBits;
 }
-else
+
+unittest
 {
-    alias Priorities = immutable(ubyte)[];
+    foreach (val; BitArray([14, 15]))
+    {}
+
+    foreach (data; [[0], [0, 1, 0], [30], [14, 15], [0, 13, 13, 0, 0]])
+        assert(equal(BitArray(data), data));
 }
+
+alias Priorities = BitArray;
 
 @property auto letters(string s) { return s.filter!(a => !a.isDigit())(); }
-@property auto priorities(R)(R r) { return r.getPriorities(); }
-
-extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
-
-@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
-{
-    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
-}
-
-immutable(ubyte)[] getPriorities(R)(R r) if (is(ElementType!R : dchar))
+@property Priorities priorities(R)(R r)
 {
     ubyte buf[20] = void;
     size_t pos = 0;
@@ -48,15 +80,28 @@ immutable(ubyte)[] getPriorities(R)(R r) if (is(ElementType!R : dchar))
     }
     while (pos && buf[pos-1] == 0)
         --pos;
-    return buf[0..pos].idup;
+    return Priorities(buf[0 .. pos]);
+}
+
+
+extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
+
+@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
+{
+    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
 }
 
 unittest
 {
-    assert("a1bc3d4".getPriorities() == [0, 1, 0, 3, 4]);
-    assert("to2gr".getPriorities() == [0, 0, 2]);
-    assert("1to".getPriorities() == [1]);
-    assert("x3c2".getPriorities() == [0, 3, 2]);
+    enum testcases = [
+        "a1bc3d4" : [0, 1, 0, 3, 4],
+        "to2gr" : [0, 0, 2],
+        "1to" : [1],
+        "x3c2" : [0, 3, 2],
+        "1a2b3c4" : [1, 2, 3, 4],
+    ];
+    foreach (pat, prios; testcases)
+        assert(equal(priorities(pat), prios));
 }
 
 struct Trie
@@ -142,8 +187,12 @@ struct Hyphenator
             foreach (c; search)
             {
                 if ((p = c in p.elems) is null) break;
-                foreach (off, prio; p.priorities)
+                size_t off;
+                foreach (prio; cast()p.priorities)
+                {
                     buf[pos + off] = max(buf[pos + off], prio);
+                    ++off;
+                }
             }
         }
         // trim priorities before and after leading '.'
@@ -163,7 +212,6 @@ struct Hyphenator
     {
         auto p = &getTerminal(rng.letters);
         *p = rng.priorities;
-        debug { p.pattern = rng.to!string(); }
     }
 
     private ref Priorities getTerminal(R)(R rng)
@@ -181,9 +229,9 @@ struct Hyphenator
         exceptions[s] = prios;
     }
 
-    static Priorities exceptionPriorities(string s)
+    static immutable(ubyte)[] exceptionPriorities(string s)
     {
-        Priorities prios;
+        typeof(return) prios;
         for (s.popFront(); !s.empty; s.popFront())
         {
             if (s.front == '-')
@@ -199,7 +247,7 @@ struct Hyphenator
         assert(exceptionPriorities("as-so-ciate") == [0, 1, 0, 1, 0, 0, 0, 0]);
     }
 
-    Priorities[string] exceptions;
+    immutable(ubyte)[][string] exceptions;
     Trie root;
 }
 
