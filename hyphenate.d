@@ -1,24 +1,34 @@
+/**
+   Copyright: Martin Nowak 2013-.
+   License: MIT License, see LICENSE
+   Authors: $(WEB code.dawg.eu, Martin Nowak)
+*/
+module hyphenate;
+
 import std.algorithm, std.conv, std.range;
 import std.ascii : isDigit;
 import std.uni : toLower;
 import std.stdio, std.traits;
 import core.bitop;
 
-enum HYPHEN = "&shy;";
-//enum HYPHEN = "-";
-
+/**
+   Compressed representation for short integral arrays.
+ */
 struct BitArray
 {
-    this(R)(in R data) if (isIntegral!(ElementType!R))
+    ///
+    this(R)(in R data) if (isIntegral!(ElementType!R) && isUnsigned!(ElementType!R))
     {
         _bits = encode(data);
     }
 
+    ///
     @property bool empty() const
     {
         return _bits == fillBits;
     }
 
+    ///
     @property ubyte front() const
     in { assert(!empty); }
     body
@@ -26,6 +36,7 @@ struct BitArray
         return cast(ubyte)((!!(_bits & 1) ? bsf(~_bits) : bsf(_bits)) - 1);
     }
 
+    ///
     void popFront()
     {
         immutable shift = front + 1;
@@ -85,14 +96,7 @@ alias Priorities = BitArray;
     return Priorities(buf[0 .. pos]);
 }
 
-
-extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
-
-@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
-{
-    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
-}
-
+///
 unittest
 {
     enum testcases = [
@@ -157,8 +161,12 @@ struct Trie
         Table elems;
 }
 
+/**
+   Hyphenator is used to build the pattern tries.
+ */
 struct Hyphenator
 {
+    /// initialize with the content of a Tex pattern file
     this(string s)
     {
         auto lines = s.splitter("\n");
@@ -183,7 +191,8 @@ struct Hyphenator
         assert(lines.empty);
     }
 
-    string hyphenate(string word) const
+    /// hyphenate $(PARAM word) with $(PARAM hyphen)
+    string hyphenate(string word, string hyphen) const
     {
         if (word.length <= 3) return word;
 
@@ -204,12 +213,13 @@ struct Hyphenator
         res ~= word.front; word.popFront();
         foreach (c, prio; zip(word, prios))
         {
-            if (prio & 1) res ~= HYPHEN;
+            if (prio & 1) res ~= hyphen;
             res ~= c;
         }
         return res;
     }
 
+private:
     ubyte[] buildPrios(string word, ref ubyte[] buf) const
     {
         auto search = chain(".", word, ".");
@@ -289,34 +299,10 @@ struct Hyphenator
     Trie root;
 }
 
-static immutable Hyphenator h;
-shared static this()
+private:
+extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
+
+@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
 {
-    h = cast(immutable)Hyphenator(import("hyphen.tex"));
-}
-
-string hyphenateWords(string s)
-{
-    import std.regex;
-
-    enum wordsRE = ctRegex!(`\w+`, "g");
-    return s.replace!((c) => h.hyphenate(c.hit))(wordsRE);
-}
-
-string hyphenateHTML(string s)
-{
-    return s;
-}
-
-void main(string[] args)
-{
-    import std.file;
-
-    foreach (file; args[1..$])
-    {
-        if (file.endsWith(".html"))
-            write(file, file.readText.hyphenateHTML());
-        else
-            write(file, file.readText.hyphenateWords());
-    }
+    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
 }

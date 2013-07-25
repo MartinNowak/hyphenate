@@ -1,0 +1,25 @@
+{
+    "name": "hyphenate",
+    "description": "Hyphenation library for Tex hyphenation patterns.",
+    "homepage": "http://github.com/dawgfoto/hyphenation",
+    "copyright": "Copyright © 2013-, Martin Nowak",
+    "license": "MIT",
+    "configurations": [
+        {
+            "name": "lib",
+            "targetType": "staticLibrary",
+            "sourceFiles": ["hyphenate.d"],
+        },
+        {
+            "name": "bin",
+            "targetType": "executable",
+            "sourceFiles": ["example.d", "hyphenate.d"],
+            "stringImportPaths": ["."],
+        }
+    ],
+    "authors": [
+        "Martin Nowak"
+    ],
+    "dependencies": {
+    }
+}
