@@ -1,12 +1,26 @@
 import std.algorithm, std.conv, std.range, std.ascii;
 import std.stdio;
+import core.bitop;
 
 //enum HYPHEN = "&shy;";
 enum HYPHEN = "-";
 
-alias Priorities = immutable(ubyte)[];
+debug
+{
+    struct Priorities
+    {
+        string pattern;
+        immutable(ubyte)[] prios;
+        alias prios this;
+    }
+}
+else
+{
+    alias Priorities = immutable(ubyte)[];
+}
+
 @property auto letters(string s) { return s.filter!(a => !a.isDigit())(); }
-@property Priorities priorities(R)(R r) { return r.getPriorities(); }
+@property auto priorities(R)(R r) { return r.getPriorities(); }
 
 extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
 
@@ -15,7 +29,7 @@ extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, vo
     return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
 }
 
-Priorities getPriorities(R)(R r) if (is(ElementType!R : dchar))
+immutable(ubyte)[] getPriorities(R)(R r) if (is(ElementType!R : dchar))
 {
     ubyte buf[20] = void;
     size_t pos = 0;
@@ -47,13 +61,58 @@ unittest
 
 struct Trie
 {
-    Trie[dchar] elems;
+    this(dchar c)
+    {
+        debug _c = c;
+    }
+
+    static struct Table
+    {
+        inout(Trie)* opIn_r(dchar c) inout
+        {
+            if (c >= 128 || !bt(bitmaskPtr, c))
+                return null;
+            return &entries[getPos(c)-1];
+        }
+
+        ref Trie getLvalue(dchar c)
+        {
+            if (c >= 128) assert(0);
+            auto npos = getPos(c);
+            if (!bts(bitmaskPtr, c))
+                entries.insertInPlace(npos++, Trie(c));
+            return entries[npos-1];
+        }
+
+        private size_t getPos(dchar c) const
+        {
+            immutable nbyte = c / 32; c &= 31;
+            size_t npos;
+            foreach (i; 0 .. nbyte)
+                npos += popcnt(bitmask[i]);
+            npos += popcnt(bitmask[nbyte] & (1 << c | (1 << c) - 1));
+            return npos;
+        }
+
+        private @property inout(size_t)* bitmaskPtr() inout
+        {
+            return cast(inout(size_t)*)bitmask.ptr;
+        }
+
+        uint[4] bitmask;
+        Trie[] entries;
+    }
+    debug dchar _c;
     Priorities priorities;
+    version (none)
+        Trie[dchar] elems;
+    else
+        Table elems;
 }
 
 struct Hyphenator
 {
-    string hyphenate(string word)
+    string hyphenate(string word) const
     {
         ubyte buf[20];
         const(ubyte)[] prios;
@@ -73,11 +132,11 @@ struct Hyphenator
         return res;
     }
 
-    ubyte[] buildPrios(string word, ubyte[] buf)
+    ubyte[] buildPrios(string word, ubyte[] buf) const
     {
         auto search = chain(".", word, ".");
-        size_t pos;
-        for (; !search.empty; ++pos, search.popFront())
+        assert(buf.length >= word.length + 3);
+        for (size_t pos; !search.empty; ++pos, search.popFront())
         {
             auto p = &root;
             foreach (c; search)
@@ -87,10 +146,9 @@ struct Hyphenator
                     buf[pos + off] = max(buf[pos + off], prio);
             }
         }
-        ++pos;
         // trim priorities before and after leading '.'
         // trim priorities before and after trailing '.'
-        buf = buf[2..pos-2];
+        buf = buf[2..2+word.length-1];
         // no hyphens after first or before last letter
         buf[0] = buf[$-1] = 0;
         return buf;
@@ -103,7 +161,9 @@ struct Hyphenator
 
     void insertPattern(R)(R rng)
     {
-        getTerminal(rng.letters) = rng.priorities;
+        auto p = &getTerminal(rng.letters);
+        *p = rng.priorities;
+        debug { p.pattern = rng.to!string(); }
     }
 
     private ref Priorities getTerminal(R)(R rng)
