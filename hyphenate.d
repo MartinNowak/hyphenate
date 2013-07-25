@@ -1,9 +1,11 @@
-import std.algorithm, std.conv, std.range, std.ascii;
+import std.algorithm, std.conv, std.range;
+import std.ascii : isDigit;
+import std.uni : toLower;
 import std.stdio, std.traits;
 import core.bitop;
 
-//enum HYPHEN = "&shy;";
-enum HYPHEN = "-";
+enum HYPHEN = "&shy;";
+//enum HYPHEN = "-";
 
 struct BitArray
 {
@@ -157,14 +159,45 @@ struct Trie
 
 struct Hyphenator
 {
+    this(string s)
+    {
+        auto lines = s.splitter("\n");
+        lines = lines.find!(a => a.startsWith(`\patterns{`))();
+        lines.popFront();
+        foreach (line; refRange(&lines).until!(a => a.startsWith("}"))())
+        {
+            insertPattern(line);
+        }
+        assert(lines.front.startsWith("}"));
+        lines.popFront();
+        assert(lines.front.startsWith(`\hyphenation{`));
+        lines.popFront();
+        foreach (line; refRange(&lines).until!(a => a.startsWith("}"))())
+        {
+            insertException(line);
+        }
+        assert(lines.front.startsWith("}"));
+        lines.popFront();
+        assert(lines.front.empty);
+        lines.popFront();
+        assert(lines.empty);
+    }
+
     string hyphenate(string word) const
     {
-        ubyte buf[20];
+        if (word.length <= 3) return word;
+
+        static ubyte buf[];
+        static Appender!string lower;
+        lower.put(word.map!toLower());
+
         const(ubyte)[] prios;
-        if (auto p = word in exceptions)
+        if (auto p = lower.data in exceptions)
             prios = *p;
         else
-            prios = buildPrios(word, buf);
+            prios = buildPrios(lower.data, buf);
+
+        lower.clear();
 
         string res;
         assert(prios.length == word.length-1);
@@ -177,10 +210,15 @@ struct Hyphenator
         return res;
     }
 
-    ubyte[] buildPrios(string word, ubyte[] buf) const
+    ubyte[] buildPrios(string word, ref ubyte[] buf) const
     {
         auto search = chain(".", word, ".");
-        assert(buf.length >= word.length + 3);
+        if (buf.length < word.length + 3)
+        {
+            assumeSafeAppend(buf);
+            buf.length = word.length + 3;
+        }
+        buf[] = 0;
         for (size_t pos; !search.empty; ++pos, search.popFront())
         {
             auto p = &root;
@@ -197,10 +235,10 @@ struct Hyphenator
         }
         // trim priorities before and after leading '.'
         // trim priorities before and after trailing '.'
-        buf = buf[2..2+word.length-1];
+        auto slice = buf[2..2+word.length-1];
         // no hyphens after first or before last letter
-        buf[0] = buf[$-1] = 0;
-        return buf;
+        slice[0] = slice[$-1] = 0;
+        return slice;
     }
 
     Leave findLeave(R)(R rng)
@@ -251,35 +289,34 @@ struct Hyphenator
     Trie root;
 }
 
-Hyphenator hyphenator(string s)
+static immutable Hyphenator h;
+shared static this()
 {
-    Hyphenator hyphenator;
-    auto lines = s.splitter("\n");
-    lines = lines.find!(a => a.startsWith(`\patterns{`))();
-    lines.popFront();
-    foreach (line; refRange(&lines).until!(a => a.startsWith("}"))())
-    {
-        hyphenator.insertPattern(line);
-    }
-    assert(lines.front.startsWith("}"));
-    lines.popFront();
-    assert(lines.front.startsWith(`\hyphenation{`));
-    lines.popFront();
-    foreach (line; refRange(&lines).until!(a => a.startsWith("}"))())
-    {
-        hyphenator.insertException(line);
-    }
-    assert(lines.front.startsWith("}"));
-    lines.popFront();
-    assert(lines.front.empty);
-    lines.popFront();
-    assert(lines.empty);
-    return hyphenator;
+    h = cast(immutable)Hyphenator(import("hyphen.tex"));
+}
+
+string hyphenateWords(string s)
+{
+    import std.regex;
+
+    enum wordsRE = ctRegex!(`\w+`, "g");
+    return s.replace!((c) => h.hyphenate(c.hit))(wordsRE);
+}
+
+string hyphenateHTML(string s)
+{
+    return s;
 }
 
 void main(string[] args)
 {
-    auto h = hyphenator(import("hyphen.tex"));
-    foreach (word; args[1..$])
-        writeln(h.hyphenate(word));
+    import std.file;
+
+    foreach (file; args[1..$])
+    {
+        if (file.endsWith(".html"))
+            write(file, file.readText.hyphenateHTML());
+        else
+            write(file, file.readText.hyphenateWords());
+    }
 }
