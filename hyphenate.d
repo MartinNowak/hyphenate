@@ -4,25 +4,34 @@ import std.stdio;
 //enum HYPHEN = "&shy;";
 enum HYPHEN = "-";
 
-immutable(ubyte)[] getPriorities(string s)
+alias Priorities = immutable(ubyte)[];
+@property auto letters(string s) { return s.filter!(a => !a.isDigit())(); }
+@property Priorities priorities(R)(R r) { return r.getPriorities(); }
+
+extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
+
+@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
+{
+    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
+}
+
+Priorities getPriorities(R)(R r) if (is(ElementType!R : dchar))
 {
     ubyte buf[20] = void;
     size_t pos = 0;
-    foreach (ref i, c; s)
+    while (!r.empty)
     {
+        immutable c = r.front; r.popFront();
         if (c.isDigit())
         {
             buf[pos++] = cast(ubyte)(c - '0');
-            ++i;
+            if (!r.empty) r.popFront();
         }
         else
         {
             buf[pos++] = 0;
         }
     }
-    if (!s[$-1].isDigit())
-        buf[pos++] = 0;
-    assert(pos == s.count!(a => !a.isDigit())() + 1);
     while (pos && buf[pos-1] == 0)
         --pos;
     return buf[0..pos].idup;
@@ -38,35 +47,8 @@ unittest
 
 struct Trie
 {
-    static Leave empty;
-    ref Leave getLeave(R)(R rng, bool force)
-    {
-
-        if (rng.empty)
-            return leave;
-        else
-        {
-            immutable c = rng.front; rng.popFront();
-            if (auto p = c in elems)
-                return p.getLeave(rng, force);
-            else if (force)
-            {
-                elems[c] = Trie.init;
-                return elems[c].getLeave(rng, force);
-            }
-            else
-                return empty;
-        }
-    }
-
     Trie[dchar] elems;
-    Leave leave;
-}
-
-struct Leave
-{
-    immutable(ubyte)[] priorities;
-    string pattern;
+    Priorities priorities;
 }
 
 struct Hyphenator
@@ -81,10 +63,12 @@ struct Hyphenator
             prios = buildPrios(word, buf);
 
         string res;
+        assert(prios.length == word.length-1);
+        res ~= word.front; word.popFront();
         foreach (c, prio; zip(word, prios))
         {
-            res ~= c;
             if (prio & 1) res ~= HYPHEN;
+            res ~= c;
         }
         return res;
     }
@@ -93,19 +77,23 @@ struct Hyphenator
     {
         auto search = chain(".", word, ".");
         size_t pos;
-        for (; !search.empty; ++pos, search.popFront)
+        for (; !search.empty; ++pos, search.popFront())
         {
             auto p = &root;
             foreach (c; search)
             {
                 if ((p = c in p.elems) is null) break;
-                foreach (off, prio; p.leave.priorities)
+                foreach (off, prio; p.priorities)
                     buf[pos + off] = max(buf[pos + off], prio);
             }
         }
-        // no hyphens in the first/last two chars
-        buf[1] = buf[2] = buf[pos-1] = buf[pos-2] = 0;
-        return buf[2..pos];
+        ++pos;
+        // trim priorities before and after leading '.'
+        // trim priorities before and after trailing '.'
+        buf = buf[2..pos-2];
+        // no hyphens after first or before last letter
+        buf[0] = buf[$-1] = 0;
+        return buf;
     }
 
     Leave findLeave(R)(R rng)
@@ -113,41 +101,45 @@ struct Hyphenator
         return root.getLeave(rng, false);
     }
 
-    void insertPattern(string s)
+    void insertPattern(R)(R rng)
     {
-        auto leave = &root.getLeave(s.filter!(a => !a.isDigit()), true);
-        leave.priorities = s.getPriorities();
-        leave.pattern = s;
+        getTerminal(rng.letters) = rng.priorities;
+    }
+
+    private ref Priorities getTerminal(R)(R rng)
+    {
+        auto p = &root;
+        foreach (c; rng)
+            p = &p.elems.getLvalue(c);
+        return p.priorities;
     }
 
     void insertException(string s)
     {
         auto prios = exceptionPriorities(s);
-        s = s.filter!(a => a != '-').to!string();
+        s = s.filter!(a => a != '-')().to!string();
         exceptions[s] = prios;
     }
 
-    static immutable(ubyte)[] exceptionPriorities(string s)
+    static Priorities exceptionPriorities(string s)
     {
-        immutable(ubyte)[] prios;
-        assert(s.front != '-');
-        foreach (ref i, c; s[1..$])
+        Priorities prios;
+        for (s.popFront(); !s.empty; s.popFront())
         {
-            if (c == '-')
-                prios ~= 1, ++i;
+            if (s.front == '-')
+                prios ~= 1, s.popFront();
             else
                 prios ~= 0;
         }
-        prios ~= 0;
         return prios;
     }
 
     unittest
     {
-        assert(exceptionPriorities("as-so-ciate") == [0, 1, 0, 1, 0, 0, 0, 0, 0], exceptionPriorities("as-so-ciate").to!string());
+        assert(exceptionPriorities("as-so-ciate") == [0, 1, 0, 1, 0, 0, 0, 0]);
     }
 
-    immutable(ubyte)[][string] exceptions;
+    Priorities[string] exceptions;
     Trie root;
 }
 
