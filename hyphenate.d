@@ -110,6 +110,12 @@ unittest
         assert(equal(priorities(pat), prios));
 }
 
+// HACK: core.bitop.bt is not always inlined
+bool bt(in uint* p, size_t bitnum) pure nothrow
+{
+    return !!(p[bitnum >> 5] & 1 << (bitnum & 31));
+}
+
 struct Trie
 {
     this(dchar c)
@@ -121,7 +127,7 @@ struct Trie
     {
         inout(Trie)* opIn_r(dchar c) inout
         {
-            if (c >= 128 || !bt(bitmaskPtr, c))
+            if (c >= 128 || !bt(bitmask.ptr, c))
                 return null;
             return &entries[getPos(c)-1];
         }
@@ -140,14 +146,35 @@ struct Trie
             immutable nbyte = c / 32; c &= 31;
             size_t npos;
             foreach (i; 0 .. nbyte)
-                npos += popcnt(bitmask[i]);
-            npos += popcnt(bitmask[nbyte] & (1 << c | (1 << c) - 1));
+                npos += _popcnt(bitmask[i]);
+            npos += _popcnt(bitmask[nbyte] & (1 << c | (1 << c) - 1));
             return npos;
         }
 
         private @property inout(size_t)* bitmaskPtr() inout
         {
             return cast(inout(size_t)*)bitmask.ptr;
+        }
+
+        private static int asmPopCnt(uint val) pure
+        {
+            version (D_InlineAsm_X86)
+                asm { naked; popcnt EAX, EAX; ret; }
+            else version (D_InlineAsm_X86_64)
+                asm { naked; popcnt EAX, EDI; ret; }
+            else
+                assert(0);
+        }
+
+        private static immutable int function(uint) pure _popcnt;
+
+        shared static this()
+        {
+            import core.cpuid;
+            if (hasPopcnt)
+                _popcnt = &asmPopCnt;
+            else
+                _popcnt = &core.bitop.popcnt;
         }
 
         uint[4] bitmask;
