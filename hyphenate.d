@@ -64,10 +64,10 @@ private:
 
 unittest
 {
-    foreach (val; BitArray([14, 15]))
+    foreach (val; BitArray([14u, 15u]))
     {}
 
-    foreach (data; [[0], [0, 1, 0], [30], [14, 15], [0, 13, 13, 0, 0]])
+    foreach (data; [[0u], [0u, 1u, 0u], [30u], [14u, 15u], [0u, 13u, 13u, 0u, 0u]])
         assert(equal(BitArray(data), data));
 }
 
@@ -156,7 +156,7 @@ struct Trie
             return cast(inout(size_t)*)bitmask.ptr;
         }
 
-        private static int asmPopCnt(uint val) pure
+        version (DigitalMars) private static int asmPopCnt(uint val) pure
         {
             version (D_InlineAsm_X86)
                 asm { naked; popcnt EAX, EAX; ret; }
@@ -171,10 +171,12 @@ struct Trie
         shared static this()
         {
             import core.cpuid;
-            if (hasPopcnt)
-                _popcnt = &asmPopCnt;
+            static if (is(typeof(core.bitop.popcnt!()(0))))
+                _popcnt = &core.bitop.popcnt!();
             else
                 _popcnt = &core.bitop.popcnt;
+            version (DigitalMars) if (hasPopcnt)
+                _popcnt = &asmPopCnt;
         }
 
         uint[4] bitmask;
@@ -324,12 +326,4 @@ private:
 
     immutable(ubyte)[][string] exceptions;
     Trie root;
-}
-
-private:
-extern(C) void* _aaGetX(void** pp, const TypeInfo keyti, in size_t valuesize, void* pkey);
-
-@property ref V getLvalue(AA : V[K], K, V)(ref AA aa, K key)
-{
-    return *cast(V*)_aaGetX(cast(void**)&aa, typeid(K), V.sizeof, &key);
 }
