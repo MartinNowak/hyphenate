@@ -14,7 +14,7 @@
             "name": "bin",
             "targetType": "executable",
             "sourceFiles": ["example.d", "hyphenate.d"],
-            "stringImportPaths": ["."],
+            "stringImportPaths": ["patterns"],
         }
     ],
     "authors": [
