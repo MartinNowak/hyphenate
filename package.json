@@ -10,6 +10,13 @@
             "targetType": "staticLibrary",
             "sourceFiles": ["hyphenate.d"],
         },
+	{
+		"name": "unittest",
+		"targetType": "executable",
+		"targetName": "unittest",
+		"dflags": ["-main"],
+		"sourceFiles": ["hyphenate.d"],
+	},
         {
             "name": "bin",
             "targetType": "executable",
