@@ -226,7 +226,7 @@ struct Hyphenator
         if (word.length <= 3) return word;
 
         static ubyte buf[];
-        static Appender!string lower;
+        static Appender!(char[]) lower;
         lower.put(word.map!toLower());
 
         const(ubyte)[] prios;
@@ -249,7 +249,7 @@ struct Hyphenator
     }
 
 private:
-    ubyte[] buildPrios(string word, ref ubyte[] buf) const
+    ubyte[] buildPrios(in char[] word, ref ubyte[] buf) const
     {
         auto search = chain(".", word, ".");
         if (buf.length < word.length + 3)
