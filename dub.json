@@ -6,21 +6,13 @@
     "license": "MIT",
     "configurations": [
         {
-            "name": "lib",
-            "targetType": "staticLibrary",
-            "sourceFiles": ["hyphenate.d"],
+            "name": "library",
+            "targetType": "library",
         },
-	{
-		"name": "unittest",
-		"targetType": "executable",
-		"targetName": "unittest",
-		"dflags": ["-main"],
-		"sourceFiles": ["hyphenate.d"],
-	},
         {
-            "name": "bin",
+            "name": "application",
             "targetType": "executable",
-            "sourceFiles": ["example.d", "hyphenate.d"],
+            "mainSourceFile": "example.d",
             "stringImportPaths": ["patterns"],
         }
     ],
