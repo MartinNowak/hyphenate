@@ -1,28 +1,13 @@
 language: d
 
-#compiler:
-#  - ldc2
-
 install:
-  # ldc2
-  # dub
-  - LDC2_VERSION=0.12.1
-  - DUB_VERSION=0.9.20
-  - OS=linux
-  - ARCH=x86_64
-  - LDC2=ldc2-${LDC2_VERSION}-${OS}-${ARCH}
-  - DUB=dub-${DUB_VERSION}-${OS}-${ARCH}
-  - wget https://github.com/ldc-developers/ldc/releases/download/v${LDC2_VERSION}/${LDC2}.tar.xz
-  - tar -Jxf ${LDC2}.tar.xz
-  - wget http://code.dlang.org/files/${DUB}.tar.gz
-  - tar -zxf ${DUB}.tar.gz
+  - DMD_VER=2.066.1
+  - DUB_VER=0.9.22
+  - curl -fsSL http://downloads.dlang.org/releases/2014/dmd.${DMD_VER}.linux.zip > dmd.zip
+  - unzip -q -d ~ dmd.zip
+  - curl -fsSL http://code.dlang.org/files/dub-${DUB_VER}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -xzf -
+  - export PATH="${HOME}/dmd2/linux/bin64:${PATH}"
+  - export LD_LIBRARY_PATH="${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
 
 script:
-  - ./dub --config=unittest --build=unittest --compiler=./${LDC2}/bin/ldmd2
-
-branches:
-  only:
-    - master
-
-notifications:
-  email: true
+  - dub test
