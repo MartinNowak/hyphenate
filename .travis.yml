@@ -9,5 +9,8 @@ install:
   - export PATH="${HOME}/dmd2/linux/bin64:${PATH}"
   - export LD_LIBRARY_PATH="${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
 
+  - dub fetch doveralls
+
 script:
-  - dub test
+  - dub test -b unittest-cov
+  - dub run doveralls -- -j $TRAVIS_JOB_ID
