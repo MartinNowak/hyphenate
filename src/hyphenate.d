@@ -327,3 +327,13 @@ private:
     immutable(ubyte)[][string] exceptions;
     Trie root;
 }
+
+unittest
+{
+    import std.file;
+    auto h = Hyphenator(readText("patterns/hyphen.tex"));
+    assert(h.hyphenate("hyphenate", "-") == "hy-phen-ate");
+    assert(h.hyphenate("patterns", "-") == "pat-terns");
+    assert(h.hyphenate("foobar", "|") == "foo|bar");
+    assert(h.hyphenate("obligatory", "-") == "oblig-a-tory");
+}
