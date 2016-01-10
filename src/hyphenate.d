@@ -159,9 +159,9 @@ struct Trie
         version (DigitalMars) private static int asmPopCnt(uint val) pure
         {
             version (D_InlineAsm_X86)
-                asm { naked; popcnt EAX, EAX; ret; }
+                asm pure { naked; popcnt EAX, EAX; ret; }
             else version (D_InlineAsm_X86_64)
-                asm { naked; popcnt EAX, EDI; ret; }
+                asm pure { naked; popcnt EAX, EDI; ret; }
             else
                 assert(0);
         }
