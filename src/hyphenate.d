@@ -76,7 +76,7 @@ alias Priorities = BitArray;
 @property auto letters(string s) { return s.filter!(a => !a.isDigit())(); }
 @property Priorities priorities(R)(R r)
 {
-    ubyte buf[20] = void;
+    ubyte[20] buf = void;
     size_t pos = 0;
     while (!r.empty)
     {
@@ -225,7 +225,7 @@ struct Hyphenator
     {
         if (word.length <= 3) return word;
 
-        static ubyte buf[];
+        static ubyte[] buf;
         static Appender!(char[]) lower;
         lower.put(word.map!toLower());
 
