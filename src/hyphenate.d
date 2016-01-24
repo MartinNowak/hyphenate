@@ -221,31 +221,40 @@ struct Hyphenator
     }
 
     /// hyphenate $(PARAM word) with $(PARAM hyphen)
-    string hyphenate(string word, string hyphen) const
+    string hyphenate(const(char)[] word, const(char)[] hyphen) const
     {
-        if (word.length <= 3) return word;
+        string ret;
+        hyphenate(word, hyphen, (s) { ret ~= s; });
+        return ret;
+    }
+
+    /// hyphenate $(PARAM word) with $(PARAM hyphen) and output the result to $(PARAM sink)
+    void hyphenate(const(char)[] word, const(char)[] hyphen, scope void delegate(in char[]) sink) const
+    {
+        if (word.length <= 3) return sink(word);
 
         static ubyte[] buf;
-        static Appender!(char[]) lower;
-        lower.put(word.map!toLower());
+        static Appender!(char[]) app;
+        app.put(word.map!toLower());
 
         const(ubyte)[] prios;
-        if (auto p = lower.data in exceptions)
+        if (auto p = app.data in exceptions)
             prios = *p;
         else
-            prios = buildPrios(lower.data, buf);
+            prios = buildPrios(app.data, buf);
 
-        lower.clear();
+        app.clear();
 
-        string res;
         assert(prios.length == word.length-1);
-        res ~= word.front; word.popFront();
+        app.put(word.front);
+        word.popFront();
         foreach (c, prio; zip(word, prios))
         {
-            if (prio & 1) res ~= hyphen;
-            res ~= c;
+            if (prio & 1) app.put(hyphen);
+            app.put(c);
         }
-        return res;
+        sink(app.data);
+        app.clear();
     }
 
 private:
@@ -330,10 +339,22 @@ private:
 
 unittest
 {
-    import std.file;
+    import std.file : readText;
+
     auto h = Hyphenator(readText("patterns/hyphen.tex"));
     assert(h.hyphenate("hyphenate", "-") == "hy-phen-ate");
     assert(h.hyphenate("patterns", "-") == "pat-terns");
     assert(h.hyphenate("foobar", "|") == "foo|bar");
     assert(h.hyphenate("obligatory", "-") == "oblig-a-tory");
+}
+
+unittest
+{
+    import std.array : appender;
+    import std.file : readText;
+
+    auto h = Hyphenator(readText("patterns/hyphen.tex"));
+    auto app = appender!(char[]);
+    h.hyphenate("hyphenate", "-", s => app.put(s));
+    assert(app.data == "hy-phen-ate");
 }
