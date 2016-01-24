@@ -13,9 +13,9 @@
             "name": "application",
             "targetType": "executable",
             "mainSourceFile": "example.d",
-            "stringImportPaths": ["patterns"],
         }
     ],
+    "stringImportPaths": ["patterns"],
     "authors": [
         "Martin Nowak"
     ],
