@@ -20,5 +20,6 @@
         "Martin Nowak"
     ],
     "dependencies": {
-    }
+    },
+    "-ddoxTool": "scod",
 }

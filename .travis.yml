@@ -1,2 +1,8 @@
 language: d
 sudo: false
+script: ./travis.sh
+env:
+  global:
+    - COVERAGE=true
+    # set the GH_TOKEN to deploy documentation
+    - secure: PvCAditUa3ryVcOKGZFUwUemvNXthWk4TsIoStZqcZ0J6zK1aCEhuTABXhlNdBd+E7ggK6HzQuE+/6cWh2Z+gJveUD0z6kHhl8zoLAggnUFHKDARgTy+jujgbLd5XZgKR8Yf7CZczvr9AYCJ5zQFXeURVC+uq7TcsohU3JOVR6M=
