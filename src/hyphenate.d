@@ -158,10 +158,15 @@ struct Trie
 
         version (DigitalMars) private static int asmPopCnt(uint val) pure
         {
+            static if (__VERSION__ > 2066)
+                enum pure_ = " pure";
+            else
+                enum pure_ = "";
+
             version (D_InlineAsm_X86)
-                asm pure { naked; popcnt EAX, EAX; ret; }
+                mixin("asm"~pure_~" { naked; popcnt EAX, EAX; ret; }");
             else version (D_InlineAsm_X86_64)
-                asm pure { naked; popcnt EAX, EDI; ret; }
+                mixin("asm"~pure_~" { naked; popcnt EAX, EDI; ret; }");
             else
                 assert(0);
         }
