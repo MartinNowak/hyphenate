@@ -1,0 +1,14 @@
+name "hyphenate"
+description "Hyphenation library for Tex hyphenation patterns."
+authors "Martin Nowak"
+copyright "Copyright © 2013-, Martin Nowak"
+license "MIT"
+x:ddoxTool "scod"
+stringImportPaths "patterns"
+configuration "library" {
+	targetType "library"
+}
+configuration "application" {
+	targetType "executable"
+	mainSourceFile "example.d"
+}
