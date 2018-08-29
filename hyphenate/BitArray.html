@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<title>Struct BitArray</title>
+		<link rel="stylesheet" href="../css/style.min.css"/>
+		<script type="text/javascript" src="../js/script.min.js"></script>
+	</head>
+	<body onload="setupDdox();">
+		<header></header>
+		<nav id="main-nav">
+			<div>
+				<noscript>
+					<p style="color: red">The search functionality needs JavaScript enabled</p>
+				</noscript>
+				<div id="symbolSearchPane" style="display: none">
+					<form action="#" method="GET">
+						<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(24);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" autofocus/>
+					</form>
+					<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+document.getElementById('symbolSearchPane').style.display = 'block';</script>
+				</div>
+				<ul class="tree-view">
+					<li>
+						<div class="module selected">
+							<a href="../hyphenate.html">hyphenate</a>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<p id="main-nav-footer">
+				Built with
+				<a href="https://github.com/MartinNowak/scod">scod</a>
+			</p>
+		</nav>
+		<div id="main-contents">
+			<div>
+				<h1>Struct BitArray</h1><p>Compressed representation for short integral arrays.
+</p>
+				<div class="prototype">
+					<code class="lang-d">
+						<div class="single-prototype">
+				<span class="kwd">struct</span> <span class="typ">BitArray</span>
+				<span class="pun">;</span>
+						</div>
+					</code>
+				</div>
+				
+				<section><h2>Constructors</h2>
+					<table>
+						<col class="caption"/>
+						<tr>
+							<th>Name</th><th>Description</th>
+						</tr>
+						<tr>
+							<td>
+								<a href="../hyphenate/BitArray.this.html" class="public">
+									<code>this</code>
+								</a>
+							</td>
+							<td></td>
+						</tr>
+					</table>
+				</section>
+				<section><h2>Properties</h2>
+					<table>
+						<col class="caption"/>
+						<tr>
+							<th>Name</th><th>Type</th><th>Description</th>
+						</tr>
+						<tr>
+							<td>
+								<a href="../hyphenate/BitArray.empty.html" class="public property"><code>empty</code></a><span class="tableEntryAnnotation">[get]</span>
+							</td>
+							<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td></td>
+						</tr>
+						<tr>
+							<td>
+								<a href="../hyphenate/BitArray.front.html" class="public property"><code>front</code></a><span class="tableEntryAnnotation">[get]</span>
+							</td>
+							<td class="typecol"><code class="prettyprint lang-d"><span class="typ">ubyte</span></code></td><td></td>
+						</tr>
+					</table>
+				</section>
+				<section><h2>Methods</h2>
+					<table>
+						<col class="caption"/>
+						<tr>
+							<th>Name</th><th>Description</th>
+						</tr>
+						<tr>
+							<td>
+								<a href="../hyphenate/BitArray.popFront.html" class="public">
+									<code>popFront</code>
+								</a>
+							</td>
+							<td></td>
+						</tr>
+					</table>
+				</section>
+				<section><h2>Example</h2>
+
+<pre class="code"><code class="lang-d"><span class="kwd">enum </span><span class="pln">testcases </span><span class="pun">= [
+    </span><span class="str">"a1bc3d4" </span><span class="pun">: [</span><span class="lit">0</span><span class="pun">, </span><span class="lit">1</span><span class="pun">, </span><span class="lit">0</span><span class="pun">, </span><span class="lit">3</span><span class="pun">, </span><span class="lit">4</span><span class="pun">],
+    </span><span class="str">"to2gr" </span><span class="pun">: [</span><span class="lit">0</span><span class="pun">, </span><span class="lit">0</span><span class="pun">, </span><span class="lit">2</span><span class="pun">],
+    </span><span class="str">"1to" </span><span class="pun">: [</span><span class="lit">1</span><span class="pun">],
+    </span><span class="str">"x3c2" </span><span class="pun">: [</span><span class="lit">0</span><span class="pun">, </span><span class="lit">3</span><span class="pun">, </span><span class="lit">2</span><span class="pun">],
+    </span><span class="str">"1a2b3c4" </span><span class="pun">: [</span><span class="lit">1</span><span class="pun">, </span><span class="lit">2</span><span class="pun">, </span><span class="lit">3</span><span class="pun">, </span><span class="lit">4</span><span class="pun">],
+];
+</span><span class="kwd">foreach </span><span class="pun">(</span><span class="pln">pat</span><span class="pun">, </span><span class="pln">prios</span><span class="pun">; </span><span class="pln">testcases</span><span class="pun">)
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">equal</span><span class="pun">(</span><span class="pln">priorities</span><span class="pun">(</span><span class="pln">pat</span><span class="pun">), </span><span class="pln">prios</span><span class="pun">));
+</span></code></pre>
+</section>
+
+			</div>
+			<footer>
+				<div id="license-info">
+					<p>code.dawg.eu, Martin Nowak
+</p>
+
+					<p>Martin Nowak 2013-.
+</p>
+
+					<p>MIT License, see LICENSE
+</p>
+
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>
