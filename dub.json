@@ -1,7 +1,6 @@
 {
     "name": "hyphenate",
     "description": "Hyphenation library for Tex hyphenation patterns.",
-    "homepage": "http://github.com/dawgfoto/hyphenation",
     "copyright": "Copyright © 2013-, Martin Nowak",
     "license": "MIT",
     "configurations": [
