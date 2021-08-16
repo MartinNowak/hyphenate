@@ -125,7 +125,7 @@ struct Trie
 
     static struct Table
     {
-        inout(Trie)* opIn_r(dchar c) inout
+        inout(Trie)* opBinaryRight(string op : "in")(dchar c) inout
         {
             if (c >= 128 || !bt(bitmask.ptr, c))
                 return null;
