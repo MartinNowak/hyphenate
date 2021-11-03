@@ -31,7 +31,7 @@ struct BitArray
     ///
     @property ubyte front() const
     in { assert(!empty); }
-    body
+    do
     {
         return cast(ubyte)((!!(_bits & 1) ? bsf(~_bits) : bsf(_bits)) - 1);
     }
@@ -46,7 +46,7 @@ struct BitArray
 private:
     uint encode(R)(in R data)
     in { assert(reduce!"a+b"(0, data) + data.length < 32, data.to!string()); }
-    body
+    do
     {
         uint res = fillBits;
         size_t i;
